@@ -1,0 +1,125 @@
+---
+title: 'Final Project 2: Exploratory Analysis of EEG Data for Epileptic Seizure Detection'
+author: "Sydney Kuhn"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: true
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# Introduction
+
+## Background
+
+Electroencephalography (EEG) is a technique used to measure electrical activity in the brain. EEG recordings are commonly used to help diagnose and monitor neurological disorders such as epilepsy. During a seizure, brain activity becomes unusually synchronized, which often appears as larger and more rapid changes in EEG recordings compared to normal brain activity.
+
+## The Data
+
+The data used in this project come from a Kaggle EEG dataset that is based on recordings from pediatric epilepsy patients. The original dataset contains EEG segments labeled as either seizure or non-seizure activity. Each row represents one EEG segment and includes thousands of recorded EEG values along with a variable indicating whether a seizure occurred.
+
+Because the original file is approximately 2.5 GB, it is much larger than needed for an exploratory course project. To make the analysis more manageable, I created a random sample of the data and saved it as eeg_small.csv. Instead of analyzing all 36,864 EEG measurements directly, I summarized each segment using a few commonly used EEG features.
+
+## Objectives
+
+The objective of this analysis is to explore differences in EEG measurements between segments classified as seizure activity and those classified as non-seizure activity. More specifically, this report will:
+
+1. Import and inspect the EEG data,
+2. Create several summary features for each EEG segment,
+3. Compare seizure and non-seizure segments using descriptive statistics, and
+4. Visualize differences between the two groups.
+
+# Load Packages
+
+```{r packages}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+```
+
+# Load and Prepare the Data
+
+## Data Preparation
+
+The original Kaggle file (`EEG_Scaled_data.csv`) is too large (2.5GB) to read in each time this report is knit, so the data were prepared once, outside of this report:
+
+1. **Random sample.** A random sample of EEG segments was drawn from the full file (`set.seed(123)`). The sample used here contains 2,000 observations; however, 1,999 were used after dropping the one incomplete segment that was labeled as NA.
+2. **Feature extraction.** Each segment's original 36,864 readings were reduced to five summary features:
+
+| Feature | Definition |
+|---|---|
+| `mean_amp` | Average value of the EEG readings |
+| `sd_amp` | Measures how much the signal varies |
+| `mean_abs_amp` | Average size of the signal regardless of direction |
+| `range_amp` | Difference between the maximum and minimum values |
+| `line_length` | Measures how quickly and sharply the signal changes over time |
+
+The resulting file, `eeg_features.csv` (one row per segment) is the only data file this report will read.
+
+## Load the Analysis Data
+
+After the features were created, the resulting dataset was loaded for analysis. A factor variable was also created so that the seizure status appears with clear labels rather than numeric values.
+
+```{r load-data}
+eeg <- read.csv("https://raw.githubusercontent.com/kuhnsydney/eeg-project/main/eeg_features.csv")
+
+eeg <- eeg %>%
+  filter(!is.na(target)) %>%
+  mutate(
+    seizure = factor(
+      target,
+      levels = c(0, 1),
+      labels = c("Non-seizure", "Seizure")
+    )
+  )
+
+glimpse(eeg)
+```
+
+# Data Overview
+
+```{r class-balance}
+class_counts <- eeg %>%
+  count(seizure) %>%
+  mutate(percent = round(100 * n / sum(n), 1))
+```
+
+# Table 1: Overall Counts by Seizure Status
+
+```{r table1}
+kable(
+  class_counts,
+  col.names = c("Seizure Status", "Count", "Percent (%)"),
+  caption = "Number of EEG Segments by Seizure Status"
+)
+```
+
+The final analysis dataset contains `r nrow(eeg)` EEG segments, of which `r class_counts$n[class_counts$seizure == "Seizure"]` (`r class_counts$percent[class_counts$seizure == "Seizure"]`%) were recorded during a seizure, as shown in Table 1. Most of the observations are non-seizure segments, while a smaller portion are seizure segments. This is expected because seizures occur much less frequently than normal brain activity.
+
+# Figure 1: Line Length by Seizure Status 
+
+```{r figure1}
+ggplot(eeg, aes(x = seizure, y = line_length, fill = seizure)) +
+  geom_boxplot() +
+  labs(
+    title = "Line Length by Seizure Status",
+    x = "Seizure Status",
+    y = "Line Length"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(legend.position = "none")
+```
+
+Figure 1 compares line length values between seizure and non-seizure EEG segments. The boxplots show that seizure segments generally have higher line length values than non-seizure segments. This suggests that seizure activity is associated with larger and more rapid changes in the EEG signal. Although there is some overlap between the groups, seizure segments tend to have higher median line length values overall.
+
+# Next Steps
+
+For the final report, I plan to explore additional EEG features and create more visualizations to better understand the differences between seizure and non-seizure segments. I would also like to perform statistical analyses to determine which features are most strongly associated with seizure activity.
