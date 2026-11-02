@@ -3,8 +3,6 @@ title: 'Final Project 2: Exploratory Analysis of EEG Data for Epileptic Seizure 
 author: "Sydney Kuhn"
 date: "`r Sys.Date()`"
 output:
-  pdf_document:
-    toc: true
   html_document:
     toc: true
     toc_float: true
@@ -39,9 +37,7 @@ The objective of this analysis is to explore differences in EEG measurements bet
 # Load Packages
 
 ```{r packages}
-library(dplyr)
-library(tidyr)
-library(ggplot2)
+here::i_am("report.Rmd")
 library(knitr)
 ```
 
@@ -62,39 +58,23 @@ The original Kaggle file (`EEG_Scaled_data.csv`) is too large (2.5GB) to read in
 | `range_amp` | Difference between the maximum and minimum values |
 | `line_length` | Measures how quickly and sharply the signal changes over time |
 
-The resulting file, `eeg_features.csv` (one row per segment) is the only data file this report will read.
+The resulting file, `data/eeg_features.csv` (one row per segment), is the only data file used in this analysis.
 
 ## Load the Analysis Data
 
-After the features were created, the resulting dataset was loaded for analysis. A factor variable was also created so that the seizure status appears with clear labels rather than numeric values.
+The data are cleaned in `code/00_clean_data.R`, which drops the incomplete segment and creates a factor variable so that seizure status appears with clear labels rather than numeric values. The cleaned data are loaded here.
 
 ```{r load-data}
-eeg <- read.csv("https://raw.githubusercontent.com/kuhnsydney/eeg-project/main/eeg_features.csv")
-
-eeg <- eeg %>%
-  filter(!is.na(target)) %>%
-  mutate(
-    seizure = factor(
-      target,
-      levels = c(0, 1),
-      labels = c("Non-seizure", "Seizure")
-    )
-  )
-
-glimpse(eeg)
-```
-
-# Data Overview
-
-```{r class-balance}
-class_counts <- eeg %>%
-  count(seizure) %>%
-  mutate(percent = round(100 * n / sum(n), 1))
+eeg <- readRDS(here::here("output/eeg_clean.rds"))
 ```
 
 # Table 1: Overall Counts by Seizure Status
 
+Table 1 is created in `code/01_make_table.R`.
+
 ```{r table1}
+class_counts <- readRDS(here::here("output/table_one.rds"))
+
 kable(
   class_counts,
   col.names = c("Seizure Status", "Count", "Percent (%)"),
@@ -104,18 +84,12 @@ kable(
 
 The final analysis dataset contains `r nrow(eeg)` EEG segments, of which `r class_counts$n[class_counts$seizure == "Seizure"]` (`r class_counts$percent[class_counts$seizure == "Seizure"]`%) were recorded during a seizure, as shown in Table 1. Most of the observations are non-seizure segments, while a smaller portion are seizure segments. This is expected because seizures occur much less frequently than normal brain activity.
 
-# Figure 1: Line Length by Seizure Status 
+# Figure 1: Line Length by Seizure Status
 
-```{r figure1}
-ggplot(eeg, aes(x = seizure, y = line_length, fill = seizure)) +
-  geom_boxplot() +
-  labs(
-    title = "Line Length by Seizure Status",
-    x = "Seizure Status",
-    y = "Line Length"
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(legend.position = "none")
+Figure 1 is created in `code/02_make_figure.R`.
+
+```{r figure1, out.width = "80%"}
+include_graphics(here::here("output/figure_one.png"))
 ```
 
 Figure 1 compares line length values between seizure and non-seizure EEG segments. The boxplots show that seizure segments generally have higher line length values than non-seizure segments. This suggests that seizure activity is associated with larger and more rapid changes in the EEG signal. Although there is some overlap between the groups, seizure segments tend to have higher median line length values overall.
