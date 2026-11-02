@@ -5,3 +5,5 @@ FinalProject2_EEG.pdf
 .Rproj.user
 .Rhistory
 .RData
+.DS_Store
+.RDataTmp*
