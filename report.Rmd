@@ -1,5 +1,5 @@
 ---
-title: 'Final Project 2: Exploratory Analysis of EEG Data for Epileptic Seizure Detection'
+title: "Final Project: Exploratory Analysis of EEG Data for Epileptic Seizure Detection"
 author: "Sydney Kuhn"
 date: "`r Sys.Date()`"
 output:
@@ -10,7 +10,13 @@ output:
 ---
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+here::i_am("report.Rmd")
+library(knitr)
+
+eeg          <- readRDS(here::here("output/eeg_clean.rds"))
+class_counts <- readRDS(here::here("output/table_one.rds"))
 ```
 
 # Introduction
@@ -34,16 +40,7 @@ The objective of this analysis is to explore differences in EEG measurements bet
 3. Compare seizure and non-seizure segments using descriptive statistics, and
 4. Visualize differences between the two groups.
 
-# Load Packages
-
-```{r packages}
-here::i_am("report.Rmd")
-library(knitr)
-```
-
-# Load and Prepare the Data
-
-## Data Preparation
+# Data Preparation
 
 The original Kaggle file (`EEG_Scaled_data.csv`) is too large (2.5GB) to read in each time this report is knit, so the data were prepared once, outside of this report:
 
@@ -58,23 +55,11 @@ The original Kaggle file (`EEG_Scaled_data.csv`) is too large (2.5GB) to read in
 | `range_amp` | Difference between the maximum and minimum values |
 | `line_length` | Measures how quickly and sharply the signal changes over time |
 
-The resulting file, `data/eeg_features.csv` (one row per segment), is the only data file used in this analysis.
-
-## Load the Analysis Data
-
-The data are cleaned in `code/00_clean_data.R`, which drops the incomplete segment and creates a factor variable so that seizure status appears with clear labels rather than numeric values. The cleaned data are loaded here.
-
-```{r load-data}
-eeg <- readRDS(here::here("output/eeg_clean.rds"))
-```
+The resulting file, `data/eeg_features.csv` (one row per segment), is the only data file this analysis reads. It is cleaned by `code/00_clean_data.R`, which drops the incomplete segment and labels seizure status.
 
 # Table 1: Overall Counts by Seizure Status
 
-Table 1 is created in `code/01_make_table.R`.
-
 ```{r table1}
-class_counts <- readRDS(here::here("output/table_one.rds"))
-
 kable(
   class_counts,
   col.names = c("Seizure Status", "Count", "Percent (%)"),
@@ -86,9 +71,7 @@ The final analysis dataset contains `r nrow(eeg)` EEG segments, of which `r clas
 
 # Figure 1: Line Length by Seizure Status
 
-Figure 1 is created in `code/02_make_figure.R`.
-
-```{r figure1, out.width = "80%"}
+```{r figure1, out.width = "80%", fig.align = "center"}
 include_graphics(here::here("output/figure_one.png"))
 ```
 
